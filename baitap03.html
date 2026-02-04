@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Bài 3</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>Bài 3: Đếm Ngược</h1>
+        <nav><ul><li><a href="index.html">⬅ Về trang chủ</a></li></ul></nav>
+    </header>
+    <div class="container">
+        <div id="timer">10:00</div>
+    </div>
+    <script>
+        let time = 600; // 10 phút = 600 giây
+        const el = document.getElementById('timer');
+        
+        const run = setInterval(() => {
+            const m = Math.floor(time / 60);
+            let s = time % 60;
+            s = s < 10 ? '0' + s : s;
+            el.innerText = `${m}:${s}`;
+            
+            if(time < 60) el.classList.add('hurry-up'); // Dưới 1 phút thì đỏ
+            
+            if(time <= 0) {
+                clearInterval(run);
+                alert("Hết giờ!");
+            } else {
+                time--;
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

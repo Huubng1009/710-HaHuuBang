@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Bài 1</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>Bài 1: Tìm Kiếm Sản Phẩm</h1>
+        <nav><ul><li><a href="index.html">⬅ Về trang chủ</a></li></ul></nav>
+    </header>
+    <div class="container">
+        <input type="text" id="search" placeholder="Nhập tên sản phẩm..." style="width:100%; padding:10px; margin-bottom:10px;">
+        <p id="error" class="error" style="display:none;">Không tìm thấy!</p>
+        <div id="list" class="product-list"></div>
+    </div>
+    <script>
+        const products = [
+            { name: "iPhone 15", price: "30tr" },
+            { name: "Samsung S24", price: "25tr" },
+            { name: "MacBook Air", price: "28tr" },
+            { name: "Sony Headphone", price: "6tr" },
+            { name: "Apple Watch", price: "10tr" }
+        ];
+        const listDiv = document.getElementById('list');
+        const err = document.getElementById('error');
+
+        function render(arr) {
+            listDiv.innerHTML = '';
+            if(arr.length === 0) err.style.display = 'block';
+            else {
+                err.style.display = 'none';
+                arr.forEach(p => {
+                    listDiv.innerHTML += `<div class="product-item"><h3>${p.name}</h3><p>${p.price}</p></div>`;
+                });
+            }
+        }
+        document.getElementById('search').addEventListener('input', (e) => {
+            const key = e.target.value.toLowerCase();
+            const filter = products.filter(p => p.name.toLowerCase().includes(key));
+            render(filter);
+        });
+        render(products);
+    </script>
+</body>
+</html>

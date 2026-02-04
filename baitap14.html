@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài 14: Memory Game</title>
+    <style>
+        /* --- CSS Variables & Reset --- */
+        :root {
+            --bg-color: #2c3e50;
+            --card-back: #ecf0f1;
+            --card-front: #3498db;
+            --text-color: #fff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* --- Nút quay về trang chủ (MỚI THÊM) --- */
+        .home-link {
+            width: 100%;
+            background-color: #222;
+            text-align: center;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .home-link a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+        }
+
+        .home-link a:hover {
+            color: #3498db;
+            text-decoration: underline;
+        }
+
+        /* --- Header & Controls --- */
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 { margin-bottom: 10px; }
+
+        .stats {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        button:hover { background-color: #2ecc71; }
+
+        /* --- Game Board (Grid Layout) --- */
+        .game-board {
+            display: grid;
+            gap: 15px;
+            perspective: 1000px; /* Quan trọng cho hiệu ứng 3D */
+            width: 90%; /* Sửa lại width để responsive tốt hơn */
+            max-width: 600px;
+            margin-bottom: 20px;
+        }
+
+        /* Mobile: 2 cột */
+        @media (max-width: 599px) {
+            .game-board {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Desktop: 4 cột */
+        @media (min-width: 600px) {
+            .game-board {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        /* --- Card Styles (3D Flip) --- */
+        .card {
+            background-color: transparent;
+            height: 120px; /* Chiều cao cố định */
+            cursor: pointer;
+            position: relative;
+            transform-style: preserve-3d; /* Giữ không gian 3D cho các con */
+            transition: transform 0.6s;
+        }
+
+        .card:active {
+            transform: scale(0.97);
+            transition: transform 0.1s;
+        }
+
+        /* Class để lật thẻ */
+        .card.flip {
+            transform: rotateY(180deg);
+        }
+
+        /* Mặt trước và sau */
+        .front-face, .back-face {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            backface-visibility: hidden; /* Ẩn mặt sau khi lật */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        /* Mặt chứa hình ảnh/icon (khi đã lật) */
+        .front-face {
+            background-color: var(--card-back);
+            color: #333;
+            transform: rotateY(180deg); /* Mặc định úp xuống nên mặt này xoay trước */
+        }
+
+        /* Mặt úp (khi chưa lật) */
+        .back-face {
+            background-color: var(--card-front);
+            color: white;
+            font-size: 2rem;
+        }
+        
+        .back-face::after {
+            content: "?";
+        }
+
+        /* Hover effect */
+        .card:hover .back-face {
+            background-color: #2980b9;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="home-link">
+        <a href="index.html">⬅ Quay về Trang Chủ</a>
+    </div>
+
+    <header>
+        <h1>Memory Game</h1>
+        <div class="stats">Moves: <span id="move-count">0</span></div>
+        <button onclick="resetGame()">Reset Game</button>
+    </header>
+
+    <div class="game-board" id="game-board"></div>
+
+    <script>
+        // Dữ liệu thẻ (Emojis đại diện cho hình ảnh)
+        const cardData = ['🍎', '🍌', '🍇', '🍒']; 
+        // Nhân đôi mảng để tạo thành 4 cặp (8 thẻ)
+        let cards = [...cardData, ...cardData];
+
+        const board = document.getElementById('game-board');
+        const moveDisplay = document.getElementById('move-count');
+        
+        let hasFlippedCard = false;
+        let lockBoard = false; // Khóa bảng để không click quá 2 thẻ cùng lúc
+        let firstCard, secondCard;
+        let moves = 0;
+        let matchedPairs = 0;
+
+        // Hàm tráo bài (Shuffle)
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Hàm tạo giao diện (Render)
+        function createBoard() {
+            board.innerHTML = ''; // Xóa bàn cũ
+            shuffle(cards); // Tráo bài
+
+            cards.forEach(val => {
+                const cardElement = document.createElement('div');
+                cardElement.classList.add('card');
+                cardElement.dataset.value = val; // Lưu giá trị vào data attribute để so sánh
+
+                // HTML cấu trúc 3D: Front (Icon) và Back (Dấu hỏi)
+                cardElement.innerHTML = `
+                    <div class="front-face">${val}</div>
+                    <div class="back-face"></div>
+                `;
+
+                cardElement.addEventListener('click', flipCard);
+                board.appendChild(cardElement);
+            });
+        }
+
+        // Logic lật thẻ
+        function flipCard() {
+            if (lockBoard) return;
+            if (this === firstCard) return; // Không cho click 2 lần vào 1 thẻ
+
+            this.classList.add('flip');
+
+            if (!hasFlippedCard) {
+                // Lần click đầu tiên
+                hasFlippedCard = true;
+                firstCard = this;
+                return;
+            }
+
+            // Lần click thứ hai
+            secondCard = this;
+            incrementMoves();
+            checkForMatch();
+        }
+
+        // Kiểm tra khớp
+        function checkForMatch() {
+            let isMatch = firstCard.dataset.value === secondCard.dataset.value;
+
+            isMatch ? disableCards() : unflipCards();
+        }
+
+        // Nếu khớp -> Giữ nguyên trạng thái, hủy sự kiện click
+        function disableCards() {
+            firstCard.removeEventListener('click', flipCard);
+            secondCard.removeEventListener('click', flipCard);
+            matchedPairs++;
+
+            resetBoard();
+
+            // Kiểm tra thắng
+            if (matchedPairs === cardData.length) {
+                setTimeout(() => alert(`Chúc mừng! Bạn thắng sau ${moves} bước đi!`), 500);
+            }
+        }
+
+        // Nếu không khớp -> Lật lại sau 1s
+        function unflipCards() {
+            lockBoard = true; // Khóa bảng không cho click thẻ khác
+
+            setTimeout(() => {
+                firstCard.classList.remove('flip');
+                secondCard.classList.remove('flip');
+                resetBoard();
+            }, 1000);
+        }
+
+        // Đếm số lượt đi
+        function incrementMoves() {
+            moves++;
+            moveDisplay.innerText = moves;
+        }
+
+        // Reset biến tạm sau mỗi lượt
+        function resetBoard() {
+            [hasFlippedCard, lockBoard] = [false, false];
+            [firstCard, secondCard] = [null, null];
+        }
+
+        // Hàm Reset Game toàn bộ
+        function resetGame() {
+            moves = 0;
+            matchedPairs = 0;
+            moveDisplay.innerText = moves;
+            [hasFlippedCard, lockBoard] = [false, false];
+            [firstCard, secondCard] = [null, null];
+            createBoard();
+        }
+
+        // Khởi chạy game lần đầu
+        createBoard();
+    </script>
+</body>
+</html>

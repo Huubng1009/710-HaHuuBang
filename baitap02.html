@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Bài 2</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>input{width:100%;padding:8px;margin:5px 0;} button{padding:10px;background:green;color:white;border:none;width:100%;}</style>
+</head>
+<body>
+    <header>
+        <h1>Bài 2: Form Đăng Ký</h1>
+        <nav><ul><li><a href="index.html">⬅ Về trang chủ</a></li></ul></nav>
+    </header>
+    <div class="container" style="max-width:400px;">
+        <form id="frm">
+            <label>Tên:</label><input type="text" id="name">
+            <label>Email:</label><input type="email" id="email"><div id="errEmail" class="error"></div>
+            <label>Pass:</label><input type="password" id="pass"><div id="errPass" class="error"></div>
+            <label><input type="checkbox" id="terms" style="width:auto;"> Đồng ý điều khoản</label>
+            <button type="submit">Đăng Ký</button>
+        </form>
+    </div>
+    <script>
+        document.getElementById('frm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            let valid = true;
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('pass').value;
+            
+            // Xóa lỗi cũ
+            document.getElementById('errEmail').innerText = '';
+            document.getElementById('errPass').innerText = '';
+
+            if(!email.includes('@')) {
+                document.getElementById('errEmail').innerText = 'Email sai!'; valid=false;
+            }
+            // Pass: 8 ký tự, có số, chữ hoa, chữ thường
+            if(!/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$/.test(pass)) {
+                document.getElementById('errPass').innerText = 'Pass yếu (cần 8 ký tự, hoa, thường, số)!'; valid=false;
+            }
+            if(!document.getElementById('terms').checked) { alert('Chưa đồng ý điều khoản'); valid=false; }
+
+            if(valid) {
+                localStorage.setItem('user', JSON.stringify({email}));
+                alert('Thành công!');
+            }
+        });
+    </script>
+</body>
+</html>
